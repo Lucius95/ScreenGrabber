@@ -22,20 +22,28 @@ import android.net.Uri;
 import android.os.IBinder;
 import android.os.ResultReceiver;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.view.Display;
 import android.widget.Toast;
 import android.util.Log;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.Object;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
 import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
+import com.example.screengrabber.connector.*;
 
 public class ScreenerService extends Service implements ImageReader.OnImageAvailableListener
 {
-    private int _count;
+    private boolean _isFirstStart;
     private ImageReader _imageReader;
+    private ByteBuffer _imageBuffer;
+    private Bitmap _bitmap;
     MediaProjectionManager _mediaProjectionManager;
     MediaProjection _mediaProjection;
     VirtualDisplay _virtualDisplay;
@@ -56,7 +64,7 @@ public class ScreenerService extends Service implements ImageReader.OnImageAvail
                 CreateBitmapsBytesExecutor();
             }
         };
-
+        
         Thread thread = new Thread(runnable);
         thread.setDaemon(true);
         thread.setPriority(Thread.MAX_PRIORITY);
@@ -95,6 +103,9 @@ public class ScreenerService extends Service implements ImageReader.OnImageAvail
         _virtualDisplay = _mediaProjection.createVirtualDisplay("ScreenCapture", width, height, dpi,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, _imageReader.getSurface(), null, null);
 
+
+
+
         return START_NOT_STICKY;
     }
 
@@ -115,13 +126,28 @@ public class ScreenerService extends Service implements ImageReader.OnImageAvail
 
         if(image != null)
         {
-            _count++;
-            SaveImage(image, "Image" + _count + ".png");
+            if(_isFirstStart){
+                Image.Plane plane = image.getPlanes()[0];
+                _bitmap = Bitmap.createBitmap(plane.getRowStride() / plane.getPixelStride(), plane.getBuffer().remaining() / plane.getRowStride(), Bitmap.Config.ARGB_8888);
+                _isFirstStart = false;
+            }
+
+            _imageBuffer = image.getPlanes()[0].getBuffer();
+            //_count++;
+            //SaveImageToDisk(image, "Image" + _count + ".png");
             image.close();
         }
     }
 
-    public void SaveImage(Image image, String fileName){
+    public String ConvertBitmapToBase64(Bitmap bitmap)
+    {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        return Base64.encodeToString(byteArray, Base64.DEFAULT);
+    }
+
+    public void SaveImageToDisk(Image image, String fileName){
         try{
             Image.Plane plane = image.getPlanes()[0];
             Bitmap bitmap = Bitmap.createBitmap(plane.getRowStride() / plane.getPixelStride(), plane.getBuffer().remaining() / plane.getRowStride(), Bitmap.Config.ARGB_8888);
@@ -133,15 +159,6 @@ public class ScreenerService extends Service implements ImageReader.OnImageAvail
 
         }
     }
-
-    public static void SaveToTheGalley(String filePath, Context context)
-    {
-        ContentValues values = new ContentValues();
-        values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
-        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-        values.put(MediaStore.MediaColumns.DATA, filePath);
-    }
-
 
     public void CreateBitmapsBytesExecutor(){
 

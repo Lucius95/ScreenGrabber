@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.os.Bundle;
 
 
+import com.example.screengrabber.connector.GRPCMobileConnection;
 import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
 
     private DisplayMetrics _displayMetrics = new DisplayMetrics();
 
+    private GRPCMobileConnection _grpcMobileConnection;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,8 +52,11 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        _grpcMobileConnection = new GRPCMobileConnection();
+
         Button btnOk = (Button) findViewById(R.id.btnStart);
         Button btnStop = (Button) findViewById(R.id.btnStop);
+        Button btnTest = (Button) findViewById(R.id.btnTest);
 
         // создаем обработчик нажатия
         OnClickListener oclBtnOk = new OnClickListener() {
@@ -69,8 +75,17 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        // создаем обработчик нажатия
+        OnClickListener oclBtnTest = new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                _grpcMobileConnection.SendInfo();
+            }
+        };
+
         btnOk.setOnClickListener(oclBtnOk);
         btnStop.setOnClickListener(oclBtnStop);
+        btnTest.setOnClickListener(oclBtnTest);
 
         this.getWindowManager().getDefaultDisplay().getRealMetrics(_displayMetrics);
     }

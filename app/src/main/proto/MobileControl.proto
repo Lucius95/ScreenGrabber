@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.mobilecontrol";
+option java_outer_classname = "MobileControl";
+option objc_class_prefix = "MC";
+
+package mobilecontrol;
+
+service DeviceDispatching{
+    rpc GotScreen(DeviceInfo) returns (ServerResponse);
+}
+
+message ServerResponse
+{
+    string IsValidMessage = 1;
+}
+
+message DeviceInfo
+{
+    string IdDevice = 1;
+    int32 WidthPixels = 2;
+    int32 HeightPixels = 3;
+    int32 DpiPixels = 4;
+    string ScreenBase64 = 5;
+    string FormatScreen = 6;
+}
+
+
